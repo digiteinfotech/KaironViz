@@ -14,6 +14,9 @@ class KSChart {
         textFont = 'Arial',
         drawColumnLebels = true,
         drawLabels = true,
+        labelDistance = 10,
+        colorMode = 1,
+        useGradient = true,
     }) {
         this.parent = parent;
         this.height = height;
@@ -38,6 +41,9 @@ class KSChart {
         this.textFont = textFont;
         this.drawColumnLebels = drawColumnLebels;
         this.drawLabels = drawLabels;
+        this.labelDistance = labelDistance;
+        this.colorMode = colorMode;
+        this.useGradient = useGradient;
 
         let uid = Math.random().toString(36).substr(2, 9);
         this.id_ = `ks-chart-${uid}_`;
@@ -191,11 +197,16 @@ class KSChart {
 
         let intersectRect = 0;
         canvas.style.cursor = 'default';
-        // Draw nodes
+        //drawing nodes
         for (let i = 0; i < rects.length; i++) {
             let rect = rects[i];
             let node = rect.node;
-            ctx.fillStyle = this.colorPallet[i % this.colorCount];
+            if (!this.type2 || this.colorMode == 0) {
+                ctx.fillStyle = this.colorPallet[i % this.colorCount];
+            } else {
+                let levelIndex = selectedHeaders.indexOf(rect.node.level);
+                ctx.fillStyle = this.colorPallet[levelIndex % this.colorCount];
+            }
             ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
 
             if (this.drawLabels && rect.height > 2) {
@@ -205,7 +216,11 @@ class KSChart {
                 let text =
                     String(node.name).substring(0, this.trancation) +
                     (String(node.name).length > this.trancation ? '...' : '');
-                ctx.fillText(text, rect.x + nodeWidth + this.trancation, rect.y + this.trancation);
+                ctx.fillText(
+                    text,
+                    rect.x + nodeWidth + this.labelDistance,
+                    rect.y + this.trancation
+                );
             }
             //check if a rect is intercepting with mouse
             if (
@@ -216,14 +231,14 @@ class KSChart {
             ) {
                 rect.intersect = true;
                 intersectRect = i + 1;
-                //change mose cursor
+                //changing mose cursor
                 canvas.style.cursor = 'pointer';
             }
         }
 
         if (this.drawColumnLebels) {
             if (!this.type2) {
-                //draw column names
+                //drawing column names
                 for (let i = 0; i < selectedHeaders.length; i++) {
                     let col = graphData[i];
                     let nodes = col.nodes;
@@ -235,7 +250,7 @@ class KSChart {
                     ctx.fillText(selectedHeaders[i], x + 4, y - 4);
                 }
             } else {
-                //draw column names
+                //drawing column names
                 for (let i = 0; i < selectedHeaders.length; i++) {
                     let x = margin + i * (maxNodeWidth + margin);
                     let y = canvas.height - 2;
@@ -245,11 +260,11 @@ class KSChart {
                 }
             }
         }
-        // Draw ribbon-like links
-        ctx.globalAlpha = 0.3; // Set transparency
+        //drawing ribbon-like links
+        ctx.globalAlpha = 0.2; // Set transparency
         ctx.fillStyle = this.ribbonStyle; // Fill color for links
 
-        let interAlpha = 0.6;
+        let interAlpha = 0.7;
         let dones = rects.map((r) => 0);
         let tDones = rects.map((r) => 0);
         let resetAlpha = false;
@@ -265,11 +280,11 @@ class KSChart {
             let h4 = target.height * Math.min(tDones[link.target] + link.tValue, 1.0);
 
             const sourceTargetDistance = Math.abs(source.x - target.x);
-            //bend the curve if the source and target are very far
+            //bending the curve if the source and target are very far
             if (sourceTargetDistance > 200) {
                 curveRadius = sourceTargetDistance / 2;
             }
-            //bend the curve if the source and target are very close
+            //bend ing the curve if the source and target are very close
             else if (sourceTargetDistance <= source.width + target.width) {
                 curveRadius = margin / 2;
             } else {
@@ -285,8 +300,12 @@ class KSChart {
             } else {
                 resetAlpha = false;
             }
-
-            ctx.fillStyle = this.colorPallet[link.source % this.colorCount];
+            if (!this.type2 || this.colorMode == 0) {
+                ctx.fillStyle = this.colorPallet[link.source % this.colorCount];
+            } else {
+                let levelIndex = selectedHeaders.indexOf(rects[link.source].node.level);
+                ctx.fillStyle = this.colorPallet[levelIndex % this.colorCount];
+            }
 
             ctx.beginPath();
             ctx.moveTo(source.x + source.width, h1);
@@ -310,19 +329,24 @@ class KSChart {
             ctx.closePath();
             ctx.fill();
 
-            if (resetAlpha) ctx.globalAlpha = 0.3;
+            if (resetAlpha) ctx.globalAlpha = 0.2;
 
             dones[link.source] += link.value;
             tDones[link.target] += link.tValue;
         }
 
-        ctx.globalAlpha = 1; // Reset transparency
+        ctx.globalAlpha = 1; // Resetting transparency
 
         if (intersectRect > 0) {
             let rect = rects[intersectRect - 1];
             let node = rect.node;
             //box around node
-            ctx.fillStyle = this.colorPallet[(intersectRect - 1) % this.colorCount];
+            if (!this.type2 || this.colorMode == 0) {
+                ctx.fillStyle = this.colorPallet[i % this.colorCount];
+            } else {
+                let levelIndex = selectedHeaders.indexOf(rect.node.level);
+                ctx.fillStyle = this.colorPallet[levelIndex % this.colorCount];
+            }
             ctx.fillRect(rect.x - 2, rect.y - 2, rect.width + 4, rect.height + 4);
 
             let text = `${node.name} (${node.freq})`;
@@ -330,12 +354,12 @@ class KSChart {
             let textHeight = 20;
             let x = rect.x + rect.width / 2 - textWidth / 2;
             let y = rect.y + rect.height / 2 - textHeight / 2;
-            ctx.fillStyle = '#3336';
+            ctx.fillStyle = '#0007';
             ctx.fillRect(this.mouse.x + 10, this.mouse.y + 10, textWidth + 10, textHeight + 10);
             ctx.fillStyle = '#fff';
             ctx.fillText(text, this.mouse.x + 10 + 5, this.mouse.y + 10 + textHeight);
 
-            //write summary at the right side of canvas
+            //writing summary at the right side of canvas
             //how many links came from and can to this node and to and from where
 
             let from = links
@@ -396,7 +420,7 @@ class KSChart {
 
             let toTextX = canvas.width - maxTextWidth - 20;
             let toTextY = 20 + maxTextHeight * fromTextLines.length + 20;
-            ctx.fillStyle = '#fff5';
+            ctx.fillStyle = '#fff8';
             ctx.fillRect(
                 fromTextX,
                 fromTextY,
@@ -448,6 +472,9 @@ padding: 1.32rem;
 margin: 1rem;
 flex: 1;
 background-color: transparent;
+display: flex;
+justify-content: center;
+align-items: center;
 }
 
 .ks-select-btn:hover {
@@ -496,7 +523,7 @@ display: inline-block;
             template += `<div class="ks-toolbar">
 <div class="ks-chart-levels" style="position: relative">
 <div style="position: relative; display: inline-block;">
-<button class="ks-select-btn" onClick="let ne = this.nextElementSibling; ne.style.display = ne.style.display === 'none'? 'block' : 'none'; " >Select Levels ↓</button>
+<button class="ks-select-btn" onClick="let ne = this.nextElementSibling; ne.style.display = ne.style.display === 'none'? 'block' : 'none'; " ><span>Select Levels</span> &nbsp; <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 512 512" height="1rem" width="1rem" xmlns="http://www.w3.org/2000/svg"><path fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M112 268l144 144 144-144M256 392V100"></path></svg></button>
 <div style="display: none; position: absolute; background-color: #f9f9f9; min-width: 200px;  box-shadow: 0px 8px 16px 2px rgba(0,0,0,0.2); z-index: 1;">
 ${this.headers
     .map((h) => {
@@ -557,7 +584,8 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
         let ctx = canvas.getContext('2d');
         this.ribbonStyle = this.randomColorGradient(ctx);
         for (let i = 0; i < this.colorCount; i++) {
-            this.colorPallet.push(this.randomColorGradient(ctx));
+            if (this.useGradient) this.colorPallet.push(this.randomColorGradient(ctx));
+            else this.colorPallet.push(this.randomColor());
         }
         if (this.showToolbar) {
             this.headers.forEach((h) => {
@@ -643,6 +671,7 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
 
     parse(data, headers) {
         let filters = [];
+        let filterHeaders = {};
         if (this.showToolbar) {
             let chips = this.elem.querySelector('.ks-filter-chips').children;
             for (let c of chips) {
@@ -654,17 +683,41 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
                         header: header[0],
                         value: header[1],
                     });
+                    if (filterHeaders[header[0]]) {
+                        filterHeaders[header[0]].push(header[1]);
+                    } else {
+                        filterHeaders[header[0]] = [header[1]];
+                    }
                 } else if (header.length > 2) {
                     filters.push({
                         header: header[0],
                         value: header.slice(1).join(':'),
                     });
+                    if (filterHeaders[header[0]]) {
+                        filterHeaders[header[0]].push(header.slice(1).join(':'));
+                    } else {
+                        filterHeaders[header[0]] = [header.slice(1).join(':')];
+                    }
                 }
             }
             filters = [...new Set(filters)];
         }
 
-        let filteredData = data.filter((d) => filters.some((f) => d[f.header] == f.value));
+        let filteredData = data.filter((d) => {
+            let flag = true;
+            for (let h in filterHeaders) {
+                if (
+                    !filterHeaders[h].some((v) => {
+                        return d[h] == v;
+                    })
+                ) {
+                    flag = false;
+                    break;
+                }
+            }
+            return flag;
+        });
+        //let filteredData = data.filter((d) => filters.some((f) => d[f.header] == f.value));
         if (filters.length === 0) filteredData = data;
         this.filteredHeaders = Object.keys(filteredData[0]);
 
