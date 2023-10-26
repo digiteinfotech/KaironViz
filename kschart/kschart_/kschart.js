@@ -391,7 +391,7 @@ class KSChart {
             let textHeight = 20;
             let x = rect.x + rect.width / 2 - textWidth / 2;
             let y = rect.y + rect.height / 2 - textHeight / 2;
-            ctx.fillStyle = '#0007';
+            ctx.fillStyle = '#0008';
             ctx.fillRect(this.mouse.x + 10, this.mouse.y + 10, textWidth + 10, textHeight + 10);
             ctx.fillStyle = '#fff';
             ctx.fillText(text, this.mouse.x + 10 + 5, this.mouse.y + 10 + textHeight);
