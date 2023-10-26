@@ -109,6 +109,19 @@ class KSChart {
             let scale = Math.min(height / totalNodeHeight, 1);
             verticalSpacing *= scale;
 
+            let ColTotalHeights = selectedHeaders.map((v) => 0);
+            for (let i = 0; i < graphData.length; i++) {
+                let col = graphData[i];
+                let nodes = col.nodes;
+                for (let j = 0; j < nodes.length; j++) {
+                    let node = nodes[j];
+                    ColTotalHeights[i] += node.freq * verticalSpacing;
+                }
+            }
+
+            let maxPlacebleNodes = Math.floor(height / (this.textScale * verticalSpacing));
+            let mp_ = 1 / maxPlacebleNodes;
+
             let maxY = 0;
             let nodeOffsets = [0];
             for (let i = 0; i < graphData.length; i++) {
@@ -121,6 +134,10 @@ class KSChart {
                 for (let j = 0; j < nodes.length; j++) {
                     let node = nodes[j];
                     let nodeHeight = node.freq * verticalSpacing;
+
+                    if (nodeHeight / ColTotalHeights[i] < mp_) {
+                        nodeHeight = ColTotalHeights[i] * mp_;
+                    }
                     rects.push({
                         x,
                         y,
@@ -160,12 +177,25 @@ class KSChart {
             let links_ = graphData.links;
             maxNodeWidth = nodeWidth;
             let ys = selectedHeaders.map((v) => 20);
+
+            let ColTotalHeights = selectedHeaders.map((v) => 0);
+            for (let node of nodes) {
+                let colIndex = selectedHeaders.indexOf(node.level);
+                ColTotalHeights[colIndex] +=
+                    Math.max(node.freqSrc, node.freqDest) * verticalSpacing;
+            }
+            let maxPlacebleNodes = Math.floor(height / (this.textScale * verticalSpacing));
+            let mp_ = 1 / maxPlacebleNodes;
+
             for (let node of nodes) {
                 let colIndex = selectedHeaders.indexOf(node.level);
 
                 let x = margin + colIndex * (maxNodeWidth + margin);
 
                 let nodeHeight = Math.max(node.freqSrc, node.freqDest) * verticalSpacing;
+                if (nodeHeight / ColTotalHeights[colIndex] < mp_) {
+                    nodeHeight = ColTotalHeights[colIndex] * mp_;
+                }
                 rects.push({
                     x,
                     y: ys[colIndex],
@@ -176,12 +206,18 @@ class KSChart {
                 });
                 ys[colIndex] += nodeHeight + verticalSpacing;
             }
+
             //scale rect height to height
             for (let i = 0; i < rects.length; i++) {
                 let scl = height / ys[rects[i].colIndex];
                 let rect = rects[i];
                 rect.height *= scl;
                 rect.y *= scl;
+            }
+
+            let colNodeCounts = ys.map((v) => 0);
+            for (let node of nodes) {
+                colNodeCounts[selectedHeaders.indexOf(node.level)]++;
             }
 
             for (let l of links_) {
@@ -219,7 +255,7 @@ class KSChart {
                 ctx.fillText(
                     text,
                     rect.x + nodeWidth + this.labelDistance,
-                    rect.y + this.trancation
+                    rect.y + rect.height / 2
                 );
             }
             //check if a rect is intercepting with mouse
@@ -340,9 +376,10 @@ class KSChart {
         if (intersectRect > 0) {
             let rect = rects[intersectRect - 1];
             let node = rect.node;
+
             //box around node
             if (!this.type2 || this.colorMode == 0) {
-                ctx.fillStyle = this.colorPallet[i % this.colorCount];
+                ctx.fillStyle = this.colorPallet[(intersectRect - 1) % this.colorCount];
             } else {
                 let levelIndex = selectedHeaders.indexOf(rect.node.level);
                 ctx.fillStyle = this.colorPallet[levelIndex % this.colorCount];

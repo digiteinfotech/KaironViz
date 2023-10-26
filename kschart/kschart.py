@@ -2,15 +2,18 @@ import json
 import pandas as pd
 from jsmin import jsmin
 import uuid
+import os
 
 from IPython.display import HTML, display
+
+module_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def sanky_chart(dataframe, headers, height=450, legend ="chart example", legend_style = 'text-align: center; font: 28px Arial', text_scale = 1, text_color = '#333', text_font='Arial', draw_labels = True, draw_column_labels = True, trancation = 20,  node_width = 20, vertical_spacing = 20, show_toolbar = True,  from_prefix = '', to_prefix = '', from_suffix = '', to_suffix = '', label_distance = 10, use_gradient = True):
     jsonStr = dataframe.to_json(orient='records')
     headers = json.dumps(headers)
-    text = open('kschart/kschart_template.html', 'r').read()
-    drillChart_js = open('kschart/kschart.js', 'r').read()
+    text = open( module_dir + '/kschart_/kschart_template.html', 'r').read()
+    drillChart_js = open(module_dir + '/kschart_/kschart.js', 'r').read()
     drillChart_js = jsmin(drillChart_js)
     unique_id_str = str(uuid.uuid4())
     text = text.replace('@data_label', unique_id_str)
@@ -49,8 +52,8 @@ def sanky_chart(dataframe, headers, height=450, legend ="chart example", legend_
 def sanky_chart2(dataframe, src_name, dest_name, src_level, dest_level, height=450, legend ="chart example", legend_style = 'text-align: center; font: 28px Arial', text_scale = 1, text_color = '#333', text_font='Arial', draw_labels = True, draw_column_labels = True, trancation = 20,  node_width = 20, vertical_spacing = 20, show_toolbar = True, from_prefix = '', to_prefix = '', from_suffix = '', to_suffix = '', label_distance = 10, color_mode = 0, use_gradient = True):
 
     jsonStr = dataframe.to_json(orient='records')
-    text = open('kschart/kschart_template2.html', 'r').read()
-    drillChart_js = open('kschart/kschart.js', 'r').read()
+    text = open(module_dir + '/kschart_/kschart_template2.html', 'r').read()
+    drillChart_js = open(module_dir + '/kschart_/kschart.js', 'r').read()
     drillChart_js = jsmin(drillChart_js)
     unique_id_str = str(uuid.uuid4())
     text = text.replace('@data_label', unique_id_str)
@@ -92,8 +95,8 @@ def sanky_chart2(dataframe, src_name, dest_name, src_level, dest_level, height=4
 
 def drill_chart(data, start_label, y_label = 'values', legend = 'Drill Chart', legend_color = 'black', legend_font = 'Bold 20px Arial', legend_pos = 'bottom', legend_align = 'center', nav_color = '#046688', nav_font = '16px Arial', nav_justify = 'right', nav_padding = '10px', label_scale = 1.2, label_color = 'black', resolution = 1.2, background_color = 'transparent', height = 480):
     jsonStr = json.dumps(data)
-    text = open('kschart/drill_Chart_template.html', 'r').read()
-    drillChart_js = open('kschart/drillChart.js', 'r').read()
+    text = open(module_dir +'/kschart_/drill_Chart_template.html', 'r').read()
+    drillChart_js = open(module_dir +'/kschart_/drillChart.js', 'r').read()
     drillChart_js = jsmin(drillChart_js)
     unique_id_str = str(uuid.uuid4())
 
