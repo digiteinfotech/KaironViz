@@ -2,6 +2,7 @@ class KSChart {
     constructor({
         parent = document.body,
         height = 450,
+        clientHeight = 0,
         fromprefix = '',
         toprefix = '',
         fromSuffix = '',
@@ -20,15 +21,20 @@ class KSChart {
     }) {
         this.parent = parent;
         this.height = height;
+        this.clientHeight = clientHeight;
         this.elem = document.createElement('div');
         this.elem.classList.add('ks-chart');
         this.elem.style.width = '100%';
-        this.elem.style.height = `${height}px`;
+        let shouldScroll = clientHeight > 0 && clientHeight < height;
+        this.elem.style.height = `${shouldScroll ? clientHeight : height}px`;
+        this.shouldScroll = shouldScroll;
         this.parent.appendChild(this.elem);
         this.mouse = {
             x: 0,
             y: 0,
         };
+        this.senseMove = true;
+
         this.fromprefix = fromprefix;
         this.toprefix = toprefix;
         this.fromSuffix = fromSuffix;
@@ -66,6 +72,28 @@ class KSChart {
 
     draw() {
         let canvas = this.elem.querySelector('.ks-chart-canvas');
+
+        if (!this.senseMove && this.LastRects) {
+            canvas.style.cursor = 'default';
+
+            for (let i = 0; i < this.LastRects.length; i++) {
+                let rect = this.LastRects[i];
+                //check if a rect is intercepting with mouse
+                if (
+                    this.mouse.x > rect.x &&
+                    this.mouse.x < rect.x + rect.width &&
+                    this.mouse.y > rect.y &&
+                    this.mouse.y < rect.y + rect.height &&
+                    i + 1 !== this.intersectRect
+                ) {
+                    //changing mose cursor
+                    canvas.style.cursor = 'pointer';
+                    this.senseMove = true;
+                }
+            }
+            if (!this.senseMove) return;
+        }
+
         let ctx = canvas.getContext('2d');
         let pbbox = this.parent.getBoundingClientRect();
         let width = (canvas.width = pbbox.width);
@@ -230,6 +258,7 @@ class KSChart {
                 });
             }
         }
+        this.LastRects = rects;
 
         let intersectRect = 0;
         canvas.style.cursor = 'default';
@@ -267,6 +296,7 @@ class KSChart {
             ) {
                 rect.intersect = true;
                 intersectRect = i + 1;
+                this.intersectRect = i + 1;
                 //changing mose cursor
                 canvas.style.cursor = 'pointer';
             }
@@ -453,10 +483,14 @@ class KSChart {
             );
 
             let fromTextX = canvas.width - maxTextWidth - 20;
-            let fromTextY = 20;
+            //scroll offset with respect to parent
+            let cnv = ctx.canvas;
+            let scrollOffset =
+                cnv.parentElement.getBoundingClientRect().top - cnv.getBoundingClientRect().top;
+            let fromTextY = 20 + scrollOffset;
 
             let toTextX = canvas.width - maxTextWidth - 20;
-            let toTextY = 20 + maxTextHeight * fromTextLines.length + 20;
+            let toTextY = fromTextY + maxTextHeight * fromTextLines.length + 20;
             ctx.fillStyle = '#fff8';
             ctx.fillRect(
                 fromTextX,
@@ -548,13 +582,27 @@ font-size: .85rem;
 margin: .25rem;
 padding: 0.5rem;
 border-radius: 1rem;
-
+color: ${this.textColor}
 }
+
+.ks-chip > span {
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+}
+.ks-chip > span:last-child {
+    padding-right: 0.2rem;
+    color: #f84;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 
 .ks-chip {
 background-color: #ddd;
 display: inline-block;
 }
+
+.
 </style>`;
         if (this.showToolbar)
             template += `<div class="ks-toolbar">
@@ -581,24 +629,24 @@ ${this.headers
 list="search-options" placeholder="filter by..." onkeydown="
 (function (event) {
 function createChip(chipContainer, text) {
-const chip = document.createElement('div');
-
-chip.textContent = text;
+    const chip = document.createElement('div');
+    const chipText = document.createElement('span');
+    const chipClose = document.createElement('span');
+    chipText.textContent = text;
+    chipClose.textContent = 'x';
+    chip.appendChild(chipText);
+    chip.appendChild(chipClose);
+    chipClose.classList.add('ks-chip-close');
+    chipClose.addEventListener('click', function () {
+    chipContainer.removeChild(chip);
+});
 chip.classList.add('ks-chip');
-// Remove the chip when clicked
-chip.addEventListener('dblclick', function () {
-chipContainer.removeChild(chip);
-});
-chip.addEventListener('contextmenu', function (e) {
-e.preventDefault();
-chipContainer.removeChild(chip);
-});
 
 chipContainer.appendChild(chip);
 }
 if (event.key === 'Enter' && this.value.trim() !== '') {
-createChip(this.previousElementSibling, this.value.trim());
-this.value = '';
+    createChip(this.previousElementSibling, this.value.trim());
+    this.value = '';
 }
 }).call(this, event)
 
@@ -612,10 +660,17 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
 </div>`;
         template += `
 <h2 style="${legendStyle}">${legend}</h2>
-<canvas class="ks-chart-canvas" script="width: 100%; height: 100%; box-sizing: border-box;"></canvas>
+<div style="position: relative; width: 100%; height: 100%; ${
+            this.shouldScroll ? 'overflow-y: auto;' : ''
+        } overflow-x: hidden;  box-sizing: border-box;">
+<canvas class="ks-chart-canvas" script="width: 100%; height: ${
+            this.height
+        }; box-sizing: border-box;"></canvas>
+</div>
 `;
         this.elem.innerHTML = template;
         let canvas = this.elem.querySelector('.ks-chart-canvas');
+        canvas.style.height = `${this.height}px`;
         this.colorPallet = [];
         this.colorCount = 30;
         let ctx = canvas.getContext('2d');
@@ -637,12 +692,43 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
                 });
             });
         }
+        let inputBox = this.elem.querySelector('.ks-search-input');
+        inputBox.addEventListener('input', (e) => {
+            if (this.filters.includes(e.target.value)) {
+                let chipContainer = inputBox.previousElementSibling;
+                const chip = document.createElement('div');
+                const chipText = document.createElement('span');
+                const chipClose = document.createElement('span');
+                chipText.textContent = e.target.value;
+                chipClose.textContent = 'x';
+                chip.appendChild(chipText);
+                chip.appendChild(chipClose);
+                chipClose.classList.add('ks-chip-close');
+                chipClose.addEventListener('click', function () {
+                    chipContainer.removeChild(chip);
+                });
+                chip.classList.add('ks-chip');
+                chipContainer.appendChild(chip);
+                e.target.value = '';
+                this.draw();
+            }
+        });
+
         canvas.addEventListener('mousemove', (e) => {
             this.mouse = {
                 x: e.offsetX,
                 y: e.offsetY,
             };
             this.draw();
+        });
+
+        canvas.addEventListener('click', (e) => {
+            this.mouse = {
+                x: e.offsetX,
+                y: e.offsetY,
+            };
+            this.draw();
+            this.senseMove = !this.senseMove;
         });
 
         this.draw();
@@ -712,7 +798,8 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
         if (this.showToolbar) {
             let chips = this.elem.querySelector('.ks-filter-chips').children;
             for (let c of chips) {
-                let text = c.textContent.trim();
+                let text = c.children[0].textContent.trim();
+                console.log(text);
                 let header = text.split(':');
 
                 if (header.length === 2) {
@@ -754,6 +841,7 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
             }
             return flag;
         });
+
         //let filteredData = data.filter((d) => filters.some((f) => d[f.header] == f.value));
         if (filters.length === 0) filteredData = data;
         this.filteredHeaders = Object.keys(filteredData[0]);

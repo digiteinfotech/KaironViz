@@ -9,7 +9,7 @@ from IPython.display import HTML, display
 module_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-def sanky_chart(dataframe, headers, height=450, legend ="chart example", legend_style = 'text-align: center; font: 28px Arial', text_scale = 1, text_color = '#333', text_font='Arial', draw_labels = True, draw_column_labels = True, trancation = 20,  node_width = 20, vertical_spacing = 20, show_toolbar = True,  from_prefix = '', to_prefix = '', from_suffix = '', to_suffix = '', label_distance = 10, use_gradient = True):
+def sanky_chart(dataframe, headers, height=450, legend ="chart example", legend_style = 'text-align: center; font: 28px Arial', text_scale = 1, text_color = '#333', text_font='Arial', draw_labels = True, draw_column_labels = True, trancation = 20,  node_width = 20, vertical_spacing = 20, show_toolbar = True,  from_prefix = '', to_prefix = '', from_suffix = '', to_suffix = '', label_distance = 10, use_gradient = True,  client_height = 0):
     jsonStr = dataframe.to_json(orient='records')
     headers = json.dumps(headers)
     text = open( module_dir + '/kschart_/kschart_template.html', 'r').read()
@@ -18,10 +18,13 @@ def sanky_chart(dataframe, headers, height=450, legend ="chart example", legend_
     unique_id_str = str(uuid.uuid4())
     text = text.replace('@data_label', unique_id_str)
     chart_container_height = height + 80
+    if client_height < height and client_height > 0:
+        chart_container_height = client_height + 80
     if show_toolbar:
         chart_container_height = chart_container_height + 150
     text = text.replace('@chart_container_height', str(chart_container_height))
     text = text.replace('@chart_height', str(height))
+    text = text.replace('@chart_client_height', str(client_height))
     text = text.replace('@chart_legend_style', legend_style)
     text = text.replace('@chart_legend_name', legend)
     text = text.replace('@chart_text_scale', str(text_scale))
@@ -49,7 +52,7 @@ def sanky_chart(dataframe, headers, height=450, legend ="chart example", legend_
 
 
 
-def sanky_chart2(dataframe, src_name, dest_name, src_level, dest_level, height=450, legend ="chart example", legend_style = 'text-align: center; font: 28px Arial', text_scale = 1, text_color = '#333', text_font='Arial', draw_labels = True, draw_column_labels = True, trancation = 20,  node_width = 20, vertical_spacing = 20, show_toolbar = True, from_prefix = '', to_prefix = '', from_suffix = '', to_suffix = '', label_distance = 10, color_mode = 0, use_gradient = True):
+def sanky_chart2(dataframe, src_name, dest_name, src_level, dest_level, height=450, legend ="chart example", legend_style = 'text-align: center; font: 28px Arial', text_scale = 1, text_color = '#333', text_font='Arial', draw_labels = True, draw_column_labels = True, trancation = 20,  node_width = 20, vertical_spacing = 20, show_toolbar = True, from_prefix = '', to_prefix = '', from_suffix = '', to_suffix = '', label_distance = 10, color_mode = 0, use_gradient = True, client_height = 0):
 
     jsonStr = dataframe.to_json(orient='records')
     text = open(module_dir + '/kschart_/kschart_template2.html', 'r').read()
@@ -57,11 +60,14 @@ def sanky_chart2(dataframe, src_name, dest_name, src_level, dest_level, height=4
     drillChart_js = jsmin(drillChart_js)
     unique_id_str = str(uuid.uuid4())
     text = text.replace('@data_label', unique_id_str)
-    chart_container_height = height + 80
+    chart_container_height = height + 100
+    if client_height < height and client_height > 0:
+        chart_container_height = client_height + 100
     if show_toolbar:
         chart_container_height = chart_container_height + 150
     text = text.replace('@chart_container_height', str(chart_container_height))
     text = text.replace('@chart_height', str(height))
+    text = text.replace('@chart_client_height', str(client_height))
     text = text.replace('@chart_legend_style', legend_style)
     text = text.replace('@chart_legend_name', legend)
     text = text.replace('@chart_text_scale', str(text_scale))
