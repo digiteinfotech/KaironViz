@@ -16,6 +16,7 @@ class DrillChart {
         resolution = 1.2,
         backgroundColor = 'transparent',
         height = 480,
+        maxColumnWidth = 60,
     }) {
         this.parentElement = parent ?? document.body;
         this.navElement = document.createElement('div');
@@ -52,6 +53,7 @@ class DrillChart {
         this.labelScale = labelScale;
         this.labelColor = labelColor;
         this.minHeight = height;
+        this.maxColumnWidth = maxColumnWidth;
         this.mouseData = {
             x: 0,
             y: 0,
@@ -60,6 +62,7 @@ class DrillChart {
             moveTarget: null,
         };
         this.calculateBounds();
+        let bias = 10 * this.resolution;
         this.canvas.addEventListener('click', (e) => {
             let { left, top } = this.canvas.getBoundingClientRect();
             let x = e.clientX - left;
@@ -68,9 +71,10 @@ class DrillChart {
             y *= this.resolution;
             for (let i = 0; i < this.clickBoxes.length; i++) {
                 let { x: bx, y: by, w, h } = this.clickBoxes[i];
-                if (x > bx && x < bx + w && y > by && y < by + h) {
+                if (x > bx && x < bx + w && y > by - bias && y < by + h + bias) {
                     if (!this.triggerLabels) return;
                     if (this.triggerLabels.length === 0) return;
+                    if (this.triggerLabels[i].length < 1) continue;
                     this.navigation.push(this.triggerLabels[i]);
                     this.currentLabel = this.triggerLabels[i];
                     this.plot(this.dataList, this.triggerLabels[i]);
@@ -90,7 +94,8 @@ class DrillChart {
             y *= this.resolution;
             for (let i = 0; i < this.clickBoxes.length; i++) {
                 let { x: bx, y: by, w, h } = this.clickBoxes[i];
-                if (x > bx && x < bx + w && y > by && y < by + h) {
+                if (x > bx && x < bx + w && y > by - bias && y < by + h + bias) {
+                    if (this.triggerLabels[i].length < 1) continue;
                     this.canvas.style.cursor = 'pointer';
                     this.mouseData.index = i;
                     this.mouseData.x = x;
@@ -211,13 +216,16 @@ class DrillChart {
                 ctx.lineTo(right, y);
                 ctx.stroke();
 
-                ctx.fillText(val.toFixed(2), left - 30, y + 5);
+                ctx.fillText(String(Math.floor(val)), left - 30, y + 5);
             }
             ctx.setLineDash([]);
         }
 
         let barPadding = 10;
-        let barWidth = (right - left - barPadding * 2 * xs.length) / (xs.length + 1);
+        let barWidth = Math.min(
+            (right - left - barPadding * 2 * xs.length) / (xs.length + 1),
+            this.maxColumnWidth
+        );
 
         //drawing labels
         ctx.fillStyle = 'black';
@@ -255,14 +263,6 @@ class DrillChart {
 
         ctx.fillText(data.label, (canvas.width - tlength) / 2, xLebelY);
 
-        function getRandomColor() {
-            const hue = Math.floor(Math.random() * 360);
-            const saturation = 70 + Math.floor(Math.random() * 30);
-            const lightness = 60 + Math.floor(Math.random() * 20);
-
-            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-        }
-
         //drawing bars
         this.clickBoxes = [];
         let barHeight = height * 0.8;
@@ -276,15 +276,20 @@ class DrillChart {
         if (fontSize > 22) fontSize = 22;
 
         for (let i = 0; i < ys.length; i++) {
-            const grd = ctx.createLinearGradient(0, 0, 0, height);
-            grd.addColorStop(0, getRandomColor());
-            grd.addColorStop(1, getRandomColor());
-            ctx.fillStyle = grd;
-
             let x = left + dx * (i + 1) - barWidth / 2;
             let y = bottom - barHeight * yNorm(ys[i]);
             let w = barWidth;
             let h = barHeight * yNorm(ys[i]) - 2;
+
+            const grd = ctx.createLinearGradient(0, y, 0, height);
+            let color1 = this.colorPalette[data.label ?? ''];
+            let c1 = data.xLabels ? data.xLabels[i] ?? '' : '';
+            let color2 = this.colorPalette[c1];
+
+            grd.addColorStop(0, color2);
+            grd.addColorStop(1, color1);
+            ctx.fillStyle = grd;
+
             ctx.fillRect(x, y, w, h);
 
             //text
@@ -300,6 +305,13 @@ class DrillChart {
             this.clickBoxes.push({ x, y, w, h });
         }
     }
+    getRandomColor() {
+        const hue = Math.floor(Math.random() * 360);
+        const saturation = 70 + Math.floor(Math.random() * 30);
+        const lightness = 60 + Math.floor(Math.random() * 20);
+
+        return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    }
 
     plot(dataList, label) {
         if (this.navigation.length < 1) this.navigation.push(label);
@@ -310,5 +322,16 @@ class DrillChart {
         this.draw(data);
         this.triggerLabels = data.xLabels;
         this.currentLabel = label;
+    }
+    makePlot(dataList, label) {
+        this.colorPalette = {
+            '': this.getRandomColor(),
+        };
+        for (let d of dataList) {
+            if (!this.colorPalette[d.label]) {
+                this.colorPalette[d.label] = this.getRandomColor();
+            }
+        }
+        this.plot(dataList, label);
     }
 }
