@@ -52,6 +52,7 @@ class KSChart {
         this.useGradient = useGradient;
 
         let uid = Math.random().toString(36).substr(2, 9);
+        this.uid = uid;
         this.id_ = `ks-chart-${uid}_`;
     }
 
@@ -626,7 +627,7 @@ ${this.headers
 <!-- Chips will be displayed here -->
 </div>
 <input class="ks-search-input" type="text" style="display: inline-block; border:none; outline: none;"
-list="search-options" placeholder="filter by..." onkeydown="
+list="ks-s-search-options-${this.uid}" placeholder="filter by..." onkeydown="
 (function (event) {
 function createChip(chipContainer, text) {
     const chip = document.createElement('div');
@@ -652,7 +653,7 @@ if (event.key === 'Enter' && this.value.trim() !== '') {
 
 " />
 <button class="ks-apply-filter-btn">apply</button>
-<datalist id="search-options">
+<datalist id="ks-s-search-options-${this.uid}" class="ks-search-options-list">
 ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
 <!-- Add more options as needed -->
 </datalist>
@@ -799,7 +800,6 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
             let chips = this.elem.querySelector('.ks-filter-chips').children;
             for (let c of chips) {
                 let text = c.children[0].textContent.trim();
-                console.log(text);
                 let header = text.split(':');
 
                 if (header.length === 2) {
@@ -842,27 +842,20 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
             return flag;
         });
 
-        //let filteredData = data.filter((d) => filters.some((f) => d[f.header] == f.value));
+        let newOptions = [];
+        for (let d of filteredData) {
+            for (let k in d) {
+                newOptions.push(`${k}:${d[k]}`);
+            }
+        }
+        newOptions = [...new Set(newOptions)];
+        let options = this.elem.querySelector('.ks-search-options-list');
+        options.innerHTML = newOptions.map((o) => `<option value="${o}"></option>`).join('');
+
         if (filters.length === 0) filteredData = data;
         this.filteredHeaders = Object.keys(filteredData[0]);
 
         if (this.type2) {
-            //add other related entries to filtered data that has either source or dest in filtered data
-            // let relatedData = [];
-            // for (let d of data) {
-            //     if (
-            //         filteredData.some(
-            //             (f) =>
-            //                 f[this.srcName] === d[this.srcName] ||
-            //                 f[this.destName] === d[this.destName]
-            //         )
-            //     ) {
-            //         relatedData.push(d);
-            //     }
-            // }
-
-            // filteredData = filteredData.concat(relatedData);
-
             let nodeNames = [
                 ...new Set(
                     filteredData
@@ -893,6 +886,7 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
 
             let finalNodeArray = [];
             for (let n in nodes) {
+                if (nodes[n].freq === 0) continue;
                 finalNodeArray.push(nodes[n]);
             }
             let links = [];

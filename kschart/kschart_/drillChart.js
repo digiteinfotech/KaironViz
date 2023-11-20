@@ -284,7 +284,8 @@ class DrillChart {
             const grd = ctx.createLinearGradient(0, y, 0, height);
             let color1 = this.colorPalette[data.label ?? ''];
             let c1 = data.xLabels ? data.xLabels[i] ?? '' : '';
-            let color2 = this.colorPalette[c1];
+
+            let color2 = c1.length ? this.colorPalette[c1] : color1;
 
             grd.addColorStop(0, color2);
             grd.addColorStop(1, color1);
