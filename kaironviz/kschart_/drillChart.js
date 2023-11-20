@@ -330,7 +330,11 @@ class DrillChart {
         };
         for (let d of dataList) {
             if (!this.colorPalette[d.label]) {
-                this.colorPalette[d.label] = this.getRandomColor();
+                let color = this.getRandomColor();
+                while (Object.values(this.colorPalette).includes(color)) {
+                    color = this.getRandomColor();
+                }
+                this.colorPalette[d.label] = color;
             }
         }
         this.plot(dataList, label);

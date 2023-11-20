@@ -1,5 +1,7 @@
 # Different plots for data visualization
 
+Look at `example.ipynb` notebook for basic demo uses.
+
 ## Available charts
 
 -   sanky_chart
