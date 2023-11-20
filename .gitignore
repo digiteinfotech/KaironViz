@@ -4,4 +4,4 @@ __pycache__
 kschart/__pycache__
 test*
 dist/*
-
+build/*
