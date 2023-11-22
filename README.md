@@ -1,4 +1,8 @@
-# Different plots for data visualization in notebook and html export
+# Kairon Visualization
+
+### version 0.0.2
+
+Different plots for data visualization in notebook and html export.
 
 Look at `example.ipynb` notebook for basic demo uses.
 
