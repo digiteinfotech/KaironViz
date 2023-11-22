@@ -1,6 +1,10 @@
-# Different plots for data visualization
+# Different plots for data visualization in notebook and html export
 
 Look at `example.ipynb` notebook for basic demo uses.
+
+## Installing
+
+> pip install kaironviz
 
 ## Available charts
 

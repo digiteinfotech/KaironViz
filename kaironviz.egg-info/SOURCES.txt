@@ -1,3 +1,4 @@
+MANIFEST.in
 README.md
 Setup.py
 kaironviz/__init__.py
@@ -7,3 +8,8 @@ kaironviz.egg-info/SOURCES.txt
 kaironviz.egg-info/dependency_links.txt
 kaironviz.egg-info/requires.txt
 kaironviz.egg-info/top_level.txt
+kaironviz/kschart_/drillChart.js
+kaironviz/kschart_/drill_Chart_template.html
+kaironviz/kschart_/kschart.js
+kaironviz/kschart_/kschart_template.html
+kaironviz/kschart_/kschart_template2.html

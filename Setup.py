@@ -8,7 +8,7 @@ setuptools.setup(
     name="kaironviz",
  
     # version of the module
-    version="0.0.1",
+    version="0.0.2",
  
     # Name of Author
     author="Kairon Team, Nimblework",
@@ -17,7 +17,7 @@ setuptools.setup(
     author_email="spandan.mondal@nimblework.com",
  
     # #Small Description about module
-    description="data visualization for notebooks and html export",
+    description="Data visualization for notebooks and html export",
  
     # long_description=long_description,
  
@@ -28,6 +28,7 @@ setuptools.setup(
     # Any link to reach this module, ***if*** you have any webpage or github profile
     # url="https://github.com/username/",
     packages=setuptools.find_packages(),
+    include_package_data=True,
  
  
     # if module has dependencies i.e. if your package rely on other package at pypi.org
