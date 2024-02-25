@@ -13,3 +13,7 @@ kaironviz/kschart_/drill_Chart_template.html
 kaironviz/kschart_/kschart.js
 kaironviz/kschart_/kschart_template.html
 kaironviz/kschart_/kschart_template2.html
+kaironviz/kschart_/treeDiagram.js
+kaironviz/kschart_/tree_diagram_template.html
+kaironviz/kschart_/wordCloud.js
+kaironviz/kschart_/word_cloud_template.html

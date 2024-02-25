@@ -50,6 +50,8 @@ class KSChart {
         this.labelDistance = labelDistance;
         this.colorMode = colorMode;
         this.useGradient = useGradient;
+        this.isFilterChanged = false;
+        this.cachedParsedData = null;
 
         let uid = Math.random().toString(36).substr(2, 9);
         this.uid = uid;
@@ -123,7 +125,6 @@ class KSChart {
 
         let totalNodeHeight = 0;
         let maxNodeWidth = 0;
-
         let graphData = this.parse(this.data, selectedHeaders);
         if (!this.type2) {
             for (let i = 0; i < selectedHeaders.length; i++) {
@@ -152,6 +153,7 @@ class KSChart {
             let mp_ = 1 / maxPlacebleNodes;
 
             let maxY = 0;
+            let maxYs = [];
             let nodeOffsets = [0];
             for (let i = 0; i < graphData.length; i++) {
                 let col = graphData[i];
@@ -163,34 +165,42 @@ class KSChart {
                 for (let j = 0; j < nodes.length; j++) {
                     let node = nodes[j];
                     let nodeHeight = node.freq * verticalSpacing;
-
+                    let nodeDrawHeight = nodeHeight;
+                    let nodeYOff = 0;
                     if (nodeHeight / ColTotalHeights[i] < mp_) {
                         nodeHeight = ColTotalHeights[i] * mp_;
+                        nodeDrawHeight = nodeHeight;
+                    } else if (nodeHeight * 0.8 > mp_) {
+                        nodeDrawHeight = nodeHeight * 0.8;
+                        nodeYOff = (nodeHeight - nodeDrawHeight) / 2;
                     }
                     rects.push({
                         x,
-                        y,
+                        y: y + nodeYOff,
                         width: maxNodeWidth,
-                        height: nodeHeight,
+                        height: nodeDrawHeight,
                         node,
+                        col: i,
                     });
                     y += nodeHeight + verticalSpacing;
                     maxY = Math.max(maxY, y);
                 }
+                maxYs.push(maxY);
+                maxY = 0;
             }
             //scale rect height to height
-            let scl = height / maxY;
             for (let i = 0; i < rects.length; i++) {
+                let scl = height / maxYs[rects[i].col];
                 let rect = rects[i];
                 rect.height *= scl;
                 rect.y *= scl;
             }
-
             for (let i = 0; i < graphData.length - 1; i++) {
                 let _links = graphData[i].links;
                 let prevNodes = graphData[i].nodes;
                 let nextNodes = graphData[i + 1].nodes;
                 for (let l of _links) {
+                    if (!prevNodes[l.source] || !nextNodes[l.target]) continue;
                     links.push({
                         sourceCol: l.sourceCol,
                         targetCol: l.targetCol,
@@ -686,9 +696,11 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
                 let elem = this.elem.querySelector(`#${id}`);
                 elem.checked = true;
                 elem.addEventListener('change', (e) => {
+                    this.isFilterChanged = true;
                     this.draw();
                 });
                 this.elem.querySelector('.ks-apply-filter-btn').addEventListener('click', (e) => {
+                    this.isFilterChanged = true;
                     this.draw();
                 });
             });
@@ -705,12 +717,14 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
                 chip.appendChild(chipText);
                 chip.appendChild(chipClose);
                 chipClose.classList.add('ks-chip-close');
-                chipClose.addEventListener('click', function () {
+                chipClose.addEventListener('click', () => {
+                    this.isFilterChanged = true;
                     chipContainer.removeChild(chip);
                 });
                 chip.classList.add('ks-chip');
                 chipContainer.appendChild(chip);
                 e.target.value = '';
+                this.isFilterChanged = true;
                 this.draw();
             }
         });
@@ -794,6 +808,10 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
     }
 
     parse(data, headers) {
+        if (this.cachedParsedData && !this.isFilterChanged) {
+            return this.cachedParsedData;
+        }
+        this.isFilterChanged = false;
         let filters = [];
         let filterHeaders = {};
         if (this.showToolbar) {
@@ -908,12 +926,20 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
                 finalLinks.push(links[l]);
             }
 
-            return {
+            const returnData = {
                 nodes: finalNodeArray,
                 links: finalLinks,
             };
+            this.cachedParsedData = returnData;
+            return returnData;
         } else {
             let colData = {};
+            let freq = [];
+            if (filteredData[0].hasOwnProperty('_freq_')) {
+                for (let d of filteredData) {
+                    freq.push(d._freq_);
+                }
+            }
             for (let d of filteredData) {
                 for (let h of headers) {
                     if (!colData[h]) colData[h] = [];
@@ -922,12 +948,24 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
             }
 
             let cols = [];
+            const nodesArray = [];
+            const uniqueValsArray = [];
             for (let i = 0; i < headers.length; i++) {
                 let h = headers[i];
-                let uniqueVals = [...new Set(colData[h])];
-                let freqs = uniqueVals.map((v) => {
-                    return colData[h].filter((d) => d === v).length;
-                });
+                let freqsMap = new Map();
+
+                for (let index = 0; index < colData[h].length; index++) {
+                    let value = colData[h][index];
+                    if (freq.length === 0) {
+                        freqsMap.set(value, (freqsMap.get(value) || 0) + 1);
+                    } else {
+                        freqsMap.set(value, (freqsMap.get(value) || 0) + freq[index]);
+                    }
+                }
+
+                let uniqueVals = Array.from(freqsMap.keys());
+                let freqs = uniqueVals.map((v) => freqsMap.get(v));
+
                 let nodes = uniqueVals.map((v, i) => {
                     return {
                         name: v,
@@ -935,7 +973,14 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
                         level: i,
                     };
                 });
+                nodesArray.push(nodes);
+                uniqueValsArray.push(uniqueVals);
+            }
 
+            for (let i = 0; i < headers.length; i++) {
+                const h = headers[i];
+                const nodes = nodesArray[i];
+                const uniqueVals = uniqueValsArray[i];
                 let links = [];
                 let reverseLinks = []; // Store reverse links
 
@@ -948,13 +993,21 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
                             let nextNode = nextUniqueVals[k];
                             let count = 0;
                             let reverseCount = 0; // Count for reverse links
-                            for (let l = 0; l < data.length; l++) {
-                                let d = data[l];
+                            for (let l = 0; l < filteredData.length; l++) {
+                                let d = filteredData[l];
                                 if (d[h] === node.name && d[nextHeader] === nextNode) {
-                                    count++;
+                                    if (!d._freq_) {
+                                        count++;
+                                    } else {
+                                        count += d._freq_;
+                                    }
                                 }
                                 if (d[h] === nextNode && d[nextHeader] === node.name) {
-                                    reverseCount++; // Count for reverse links
+                                    if (!d._freq_) {
+                                        reverseCount++;
+                                    } else {
+                                        reverseCount += d._freq_;
+                                    }
                                 }
                             }
                             if (count > 0) {
@@ -984,7 +1037,9 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
                     links: links.concat(reverseLinks), // Concatenate reverse links
                 });
             }
+
             this.graphData = cols;
+            this.cachedParsedData = cols;
             return cols;
         }
     }

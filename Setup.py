@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="kaironviz",
  
-    version="0.0.2",
+    version="0.0.4",
  
     author="Kairon Team, Nimblework",
  
@@ -26,6 +26,7 @@ setuptools.setup(
         "pandas",
         "ipython",
         "jsmin",
+        "numpy"
     ],
 
  

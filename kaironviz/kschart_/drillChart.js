@@ -17,6 +17,7 @@ class DrillChart {
         backgroundColor = 'transparent',
         height = 480,
         maxColumnWidth = 60,
+        truncation = 20,
     }) {
         this.parentElement = parent ?? document.body;
         this.navElement = document.createElement('div');
@@ -54,6 +55,7 @@ class DrillChart {
         this.labelColor = labelColor;
         this.minHeight = height;
         this.maxColumnWidth = maxColumnWidth;
+        this.truncation = truncation;
         this.mouseData = {
             x: 0,
             y: 0,
@@ -82,11 +84,29 @@ class DrillChart {
             }
         });
 
+        this.overlay = document.createElement('div');
+        this.overlay.style.position = 'absolute';
+        this.overlay.style.top = '0';
+        this.overlay.style.left = '0';
+        this.overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        this.overlay.style.zIndex = '1000';
+        this.overlay.style.backdropFilter = 'blur(5px)';
+        this.overlay.style.color = 'white';
+        this.overlay.style.padding = '5px 10px';
+        this.overlay.style.borderRadius = '5px';
+        this.overlay.style.display = 'none';
+        this.parentElement.appendChild(this.overlay);
+
         this.canvas.addEventListener('mousemove', (e) => {
-            if (!this.triggerLabels || this.triggerLabels.length === 0) {
-                this.canvas.style.cursor = 'default';
-                return;
-            }
+            const rect = e.target.getBoundingClientRect();
+            const pRect = this.parentElement.getBoundingClientRect();
+            this.mouse = { x: 0, y: 0 };
+            this.mouse.x = e.clientX - rect.left;
+            this.mouse.y = e.clientY - rect.top;
+            const xpos = rect.left - pRect.left + this.mouse.x;
+            const ypos = rect.top - pRect.top + this.mouse.y;
+            const mouseRect = { x: this.mouse.x, y: this.mouse.y, width: 1, height: 1 };
+
             let { left, top } = this.canvas.getBoundingClientRect();
             let x = e.clientX - left;
             let y = e.clientY - top;
@@ -95,16 +115,33 @@ class DrillChart {
             for (let i = 0; i < this.clickBoxes.length; i++) {
                 let { x: bx, y: by, w, h } = this.clickBoxes[i];
                 if (x > bx && x < bx + w && y > by - bias && y < by + h + bias) {
-                    if (this.triggerLabels[i].length < 1) continue;
+                    if (this.currentData.xs.length < 1) continue;
                     this.canvas.style.cursor = 'pointer';
                     this.mouseData.index = i;
                     this.mouseData.x = x;
                     this.mouseData.y = y;
                     this.mouseData.moving = true;
                     this.moveTarget = this.clickBoxes[i];
+
+                    this.yval = this.currentData.ys[i];
+                    this.xval = this.currentData.xs[i];
+                    this.overlay.innerHTML = `${this.xval}&nbsp;( ${this.yval} )`;
+                    let xp = xpos + 10;
+                    if (xp + this.overlay.offsetWidth > pRect.width) {
+                        xp = pRect.width - this.overlay.offsetWidth - 10;
+                    }
+                    this.overlay.style.top = `${ypos + 10}px`;
+                    this.overlay.style.left = `${xp + 10}px`;
+                    this.overlay.style.display = 'block';
+
+                    if (!this.triggerLabels || this.triggerLabels.length < 1)
+                        this.canvas.style.cursor = 'default';
+
                     return;
                 }
             }
+
+            this.overlay.style.display = 'none';
             this.canvas.style.cursor = 'default';
             this.mouseData.moving = true;
         });
@@ -121,8 +158,8 @@ class DrillChart {
             let maxYLen = 6;
             let { xs, ys } = data;
             for (let i = 0; i < xs.length; i++) {
-                maxXLen = Math.max(maxXLen, xs[i].length);
-                maxYLen = Math.max(maxYLen, ys[i].toString().length);
+                maxXLen = Math.min(Math.max(maxXLen, xs[i].length), this.truncation);
+                maxYLen = Math.min(Math.max(maxYLen, ys[i].toString().length), this.truncation);
             }
             this.margin.left = 30 * this.labelScale + maxYLen * 4;
             this.margin.bottom = 80 + maxXLen * 6.4;
@@ -144,6 +181,14 @@ class DrillChart {
             width: this.canvas.width - (this.margin.left + this.margin.right),
             height: this.canvas.height - (this.margin.top + this.margin.bottom),
         };
+    }
+    intersect(rect1, rect2) {
+        return (
+            rect1.x < rect2.x + rect2.width &&
+            rect1.x + rect1.width > rect2.x &&
+            rect1.y < rect2.y + rect2.height &&
+            rect1.y + rect1.height > rect2.y
+        );
     }
 
     draw(data) {
@@ -238,7 +283,11 @@ class DrillChart {
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(Math.PI / 2.4);
-            ctx.fillText(xs[i], 0, 0);
+            const text =
+                xs[i].length > this.truncation
+                    ? xs[i].substring(0, this.truncation - 3) + '...'
+                    : xs[i];
+            ctx.fillText(text, 0, 0);
             ctx.restore();
         }
 
@@ -319,7 +368,7 @@ class DrillChart {
         this.dataList = dataList;
         let data = dataList.filter((d) => d.label === label)[0];
         this.calculateBounds(data);
-
+        this.currentData = data;
         this.draw(data);
         this.triggerLabels = data.xLabels;
         this.currentLabel = label;

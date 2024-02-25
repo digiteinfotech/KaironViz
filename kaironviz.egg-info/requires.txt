@@ -1,3 +1,4 @@
 ipython
 jsmin
+numpy
 pandas

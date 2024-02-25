@@ -1,0 +1,216 @@
+<html><head></head><body><div style="width:100%; height: 540px; background-color: white; display: flex; justify-content: center; align-items: center; position: relative; box-sizing: border-box;"
+    id="id_tree_diagram_8bc44021-8d78-41b1-a1d2-b46cffbc3554">
+</div>
+
+<script type="module">
+    const containerContent = `
+    <figure>
+
+<ul id="tree" class="tree horizontal"></ul>
+</figure>
+<style>
+figure {
+margin: 0;
+box-sizing: border-box;
+display: flex;
+width: 100%;
+justify-content: center;
+align-items: center;
+padding: 10px;
+--line-color: #333;
+--border-color: #333;
+--border-radius: 0.6rem;
+--background-color: @chart_item_background_color;
+--text-color: #333;
+--line-width: 0.15em;
+--gutter: 0.8em;
+font-size: 15px;
+font-family: Arial;
+}
+
+.tree.vertical,
+.tree.vertical ul,
+.tree.vertical li {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: relative;
+}
+
+.tree.vertical {
+    margin: 0 0 1em;
+    text-align: center;
+}
+
+.tree.vertical,
+.tree.vertical ul {
+    display: table;
+}
+
+.tree.vertical ul {
+    width: 100%;
+}
+
+
+.tree.vertical li {
+    display: table-cell;
+    padding: .5em 0;
+    vertical-align: top;
+}
+
+.tree.vertical li:before {
+    outline: solid 1px var(--line-color);
+    content: "";
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.tree.vertical li:first-child:before {
+    left: 50%;
+}
+
+.tree.vertical li:last-child:before {
+    right: 50%;
+}
+
+.tree.vertical code,
+.tree.vertical span {
+    box-sizing: border-box;
+    border: solid .13em var(--border-color);
+    border-radius: var(--border-radius, .2em);
+    display: inline-block;
+    margin: 0 .2em .5em;
+    padding: .4em .8em;
+    position: relative;
+    color: var(--text-color);
+    background: var(--background-color);
+}
+
+/* | */
+.tree.vertical ul:before,
+.tree.vertical code:before,
+.tree.vertical span:before {
+    outline: solid 1px var(--line-color);
+    content: "";
+    height: .5em;
+    left: 50%;
+    position: absolute;
+}
+
+.tree.vertical ul:before {
+    top: -.5em;
+}
+
+.tree.vertical code:before,
+.tree.vertical span:before {
+    top: -.55em;
+}
+
+/* The root node doesn't connect upwards */
+.tree.vertical>li {
+    margin-top: 0;
+}
+
+.tree.vertical>li:before,
+.tree.vertical>li:after,
+.tree.vertical>li>code:before,
+.tree.vertical>li>span:before {
+    outline: none;
+}
+
+
+.tree.horizontal {
+	 margin: 0 0 calc(var(--gutter) * 2);
+}
+ .tree.horizontal, .tree.horizontal ul, .tree.horizontal li {
+	 list-style: none;
+	 margin: 0;
+	 padding: 0;
+	 position: relative;
+}
+ .tree.horizontal code, .tree.horizontal ul {
+	 display: table-cell;
+	 margin: 0;
+	 vertical-align: middle;
+
+    }
+ .tree.horizontal ul {
+	 padding-left: calc(var(--gutter) * 2);
+}
+ .tree.horizontal ul:before, .tree.horizontal ul code:before {
+    
+	 background: var(--line-color);
+	 content: "";
+	 height: var(--line-width);
+	 left: calc(var(--line-width) / 2 * -1);
+	 position: absolute;
+	 top: calc(50% - calc(var(--line-width) / 2));
+	 width: var(--gutter);
+}
+.tree.horizontal ul code:before {
+    left: -.8em !important;
+    content: "";
+}
+ .tree.horizontal ul button:before {
+	 left: calc(calc(var(--gutter) + var(--line-width)) * 2 /-1);
+	 top: calc(50% - calc(var(--line-width) / 2));
+}
+.tree.horizontal ul li:before {
+	 background: var(--line-color);
+	 bottom: 0;
+	 content: "";
+	 left: calc(-1 * calc(var(--gutter) + calc(var(--line-width) / 2)));
+	 position: absolute;
+	 top: 0;
+	 width: var(--line-width);
+}
+ .tree.horizontal ul li:first-child:before {
+	 top: calc(50% - calc(var(--line-width) / 2));
+}
+ .tree.horizontal ul li:last-child:before {
+	 bottom: calc(50% - calc(var(--line-width) / 2));
+}
+ .tree.horizontal li {
+	 padding: calc(var(--gutter) / 2) 0;
+}
+
+
+
+.tree.horizontal li code,
+.tree.horizontal span {
+    box-sizing: border-box;
+    line-height: 1.2em;
+    appearance: none;
+}
+
+.cac {
+    margin-right: -.12em;
+    border: solid .13em var(--border-color);
+    border-radius: var(--border-radius, .2em);
+    padding: .4em .8em;
+    color: var(--text-color);
+    background: var(--background-color);
+
+}
+
+</style>
+`
+
+    class TreeDiagram{constructor({parent,data,isVertical}){this.container=parent||document.body;this.container.attachShadow({mode:'open'});this.container.shadowRoot.innerHTML=containerContent;this.isVertical=isVertical;this.data=data;this.render();}
+render(){let container=this.container.shadowRoot.querySelector('#tree');container.innerHTML=this.createTree(this.data);}
+createTree(data){if(typeof data==='string'||typeof data==='number'||typeof data==='boolean'){if(!this.isVertical)return`<li><code><div class='cac'>${data}</div></code></li>`;return'<li><code>'+data+'</code></li>';}else if(Array.isArray(data)){let html='';for(let i=0;i<data.length;i++){html+=`${this.createTree(data[i])}`;}
+return html;}else if(typeof data==='object'){let html='';for(let key in data){html+='<li>';if(!this.isVertical)html+=`<code><div class='cac'>${key}</div></code>`;else html+=`<code>${key}</code>`;html+=`<ul>${this.createTree(data[key])}</ul>`;html+='</li>';}
+return html;}}}
+    let data = `{"name (20)": {"type": "string", "description": "Name of the person", "array": [1, 2, "apple", {"key": ["value1", {"value2": {"value3": {"value4": "value5"}}}]}], "object": {"key new": "value<br/> new line"}}}`
+    data = JSON.parse(data);
+    let tree = new TreeDiagram({
+        parent: document.getElementById(`id_tree_diagram_8bc44021-8d78-41b1-a1d2-b46cffbc3554`),
+        data,
+        isVertical: `horizontal` === 'vertical' ? true : false,
+    });
+
+
+
+</script></body></html>
