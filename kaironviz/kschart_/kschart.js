@@ -798,7 +798,6 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
             }
         }
         this.filters = [...new Set(this.filters)];
-
         this.srcName = srcName;
         this.destName = destName;
         this.srcLevel = srcLevel;
@@ -860,15 +859,15 @@ ${this.filters.map((f) => `<option value="${f}"></option>`).join('')}
             return flag;
         });
 
-        let newOptions = [];
-        for (let d of filteredData) {
-            for (let k in d) {
-                newOptions.push(`${k}:${d[k]}`);
-            }
-        }
-        newOptions = [...new Set(newOptions)];
-        let options = this.elem.querySelector('.ks-search-options-list');
-        options.innerHTML = newOptions.map((o) => `<option value="${o}"></option>`).join('');
+        // let newOptions = [];
+        // for (let d of filteredData) {
+        //     for (let k in d) {
+        //         newOptions.push(`${k}:${d[k]}`);
+        //     }
+        // }
+        // newOptions = [...new Set(newOptions)];
+        // let options = this.elem.querySelector('.ks-search-options-list');
+        // options.innerHTML = newOptions.map((o) => `<option value="${o}"></option>`).join('');
 
         if (filters.length === 0) filteredData = data;
         this.filteredHeaders = Object.keys(filteredData[0]);
