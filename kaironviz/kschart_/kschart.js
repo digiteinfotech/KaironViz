@@ -212,6 +212,7 @@ class KSChart {
                 }
             }
         } else {
+            selectedHeaders = selectedHeaders.sort((a, b) => a - b);
             let nodes = graphData.nodes;
             let links_ = graphData.links;
             maxNodeWidth = nodeWidth;

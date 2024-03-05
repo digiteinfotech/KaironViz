@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: kaironviz
-Version: 0.0.5
+Version: 0.0.6
 Summary: Data visualization for notebooks and html export
 Home-page: UNKNOWN
 Author: Kairon Team, Nimblework
@@ -8,7 +8,7 @@ Author-email: spandan.mondal@nimblework.com
 License: MIT
 Description: # Kairon Visualization
         
-        ### version 0.0.5
+        ### version 0.0.6
         
         Different plots for data visualization in notebook and html export.
         

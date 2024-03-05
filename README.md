@@ -1,6 +1,6 @@
 # Kairon Visualization
 
-### version 0.0.5
+### version 0.0.6
 
 Different plots for data visualization in notebook and html export.
 
